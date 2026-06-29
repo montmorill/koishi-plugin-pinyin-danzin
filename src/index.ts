@@ -15,13 +15,23 @@ export const Config: Schema<Config> = Schema.object({
 
 export function apply(ctx: Context, config: Config) {
   ctx.on('message', async (session) => {
-    const chars = session.stripped.content
+    const chars = session.elements
+      ?.map(({ type, attrs }) => type === 'text' ? attrs.content : '')
+      .join('')
     if (!chars)
       return
     const pinyins = await ctx.pinyin.asyncPinyin(chars, { style: 3 }) as string[]
 
     const zipped = pinyins.map(pinyin => pinyin.slice(-1))
       .map((tone, index) => [tone, chars[index]])
+
+    for (const words of fixedWindow(zipped, 4)) {
+      const tones = words.map(([tone]) => tone)
+      if (tones.sort().join('') === '1234') {
+        const chars = words.map(([, char]) => char).join('')
+        await session.send(`拼音丁真：注意到「${chars}」国语四声相等俱全。`)
+      }
+    }
 
     let counter = 1
     let current = ''
@@ -47,4 +57,10 @@ export function apply(ctx: Context, config: Config) {
       }
     }
   })
+}
+
+function* fixedWindow<T>(arr: T[], size: number) {
+  for (let i = 0; i < arr.length - size + 1; i++) {
+    yield arr.slice(i, i + size)
+  }
 }
