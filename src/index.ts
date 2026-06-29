@@ -21,18 +21,13 @@ export function apply(ctx: Context, config: Config) {
     let counter = 1
     let current = ''
     let buffer = ''
-    let puncts = ''
     const zipped = pinyins.map(pinyin => pinyin.slice(-1))
       .map((tone, index) => [tone, chars[index]])
     zipped.push(['end', '']) // fix end issue
     for (const [tone, char] of zipped) {
-      if (!tone) {
-        puncts += char
-      }
-      else if (tone === current) {
+      if (tone === current) {
         counter++
-        buffer += puncts + char
-        puncts = ''
+        buffer += char
       }
       else {
         if (counter >= config.minCount) {
@@ -46,7 +41,6 @@ export function apply(ctx: Context, config: Config) {
         counter = 1
         current = tone
         buffer = char
-        puncts = ''
       }
     }
   })
