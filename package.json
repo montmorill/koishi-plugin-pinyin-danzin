@@ -1,22 +1,30 @@
 {
   "name": "koishi-plugin-pinyin-danzin",
-  "description": "注意到 “拼音丁真” 皆为平声",
   "version": "0.0.1",
-  "main": "lib/index.js",
+  "description": "注意到 “拼音丁真” 皆阴平声",
   "typings": "lib/index.d.ts",
-  "files": [
-    "lib",
-    "dist"
-  ],
   "license": "MIT",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
     "plugin"
   ],
-  "devDependencies": {},
+  "main": "lib/index.js",
+  "files": [
+    "dist",
+    "lib"
+  ],
   "peerDependencies": {
     "koishi": "^4.18.7"
+  },
+  "devDependencies": {
+    "koishi-plugin-pinyin": "^0.3.0"
+  },
+  "koishi": {
+    "service": {
+      "required": [
+        "pinyin"
+      ]
+    }
   }
 }
