@@ -15,14 +15,17 @@ export const Config: Schema<Config> = Schema.object({
 
 export function apply(ctx: Context, config: Config) {
   ctx.on('message', async (session) => {
-    const chars = session.content || ''
+    const chars = session.stripped.content
+    if (!chars)
+      return
     const pinyins = await ctx.pinyin.asyncPinyin(chars, { style: 3 }) as string[]
+
+    const zipped = pinyins.map(pinyin => pinyin.slice(-1))
+      .map((tone, index) => [tone, chars[index]])
 
     let counter = 1
     let current = ''
     let buffer = ''
-    const zipped = pinyins.map(pinyin => pinyin.slice(-1))
-      .map((tone, index) => [tone, chars[index]])
     zipped.push(['end', '']) // fix end issue
     for (const [tone, char] of zipped) {
       if (tone === current) {
