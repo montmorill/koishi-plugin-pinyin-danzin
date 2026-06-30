@@ -1,9 +1,13 @@
 {
   "name": "koishi-plugin-pinyin-danzin",
-  "version": "0.0.1",
-  "description": "注意到 “拼音丁真” 皆阴平声",
+  "version": "1.0.0",
+  "description": "注意到 “拼音丁真” 皆归一声",
   "typings": "lib/index.d.ts",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/montmorill/koishi-plugin-pinyin-danzin.git"
+  },
   "keywords": [
     "chatbot",
     "koishi",
