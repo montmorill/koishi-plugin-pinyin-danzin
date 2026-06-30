@@ -16,7 +16,7 @@ export interface Config {
 export const Config: Schema<Config> = Schema.object({
   lerp: Schema.object({
     a: Schema.number().default(3).description('最小连续同声调数量，小于等于该值时将不会触发。'),
-    b: Schema.number().default(8).description('最大连续同声调数量，大于等于该值时将必定触发。'),
+    b: Schema.number().default(4).description('最大连续同声调数量，大于等于该值时将必定触发。'),
   }),
 })
 
@@ -35,8 +35,8 @@ export function apply(ctx: Context, config: Config) {
       .join('')
     if (!chars)
       return
+    let results = []
     const pinyins = await ctx.pinyin.asyncPinyin(chars, { style: 3 }) as string[]
-
     const zipped = pinyins.map(pinyin => pinyin.slice(-1))
       .map((tone, index) => [tone, chars[index]])
 
@@ -44,7 +44,7 @@ export function apply(ctx: Context, config: Config) {
       const tones = words.map(([tone]) => tone)
       if (tones.sort().join('') === '1234') {
         const chars = words.map(([, char]) => char).join('')
-        await session.send(session.text('all', [chars]))
+        results.push(session.text('all', [chars]))
       }
     }
 
@@ -60,12 +60,15 @@ export function apply(ctx: Context, config: Config) {
       }
       const probability = inverseLerp(config.lerp.a, config.lerp.b, counter)
       if (current && '1234'.includes(current) && Math.random() < probability) {
-        await session.send(session.text(`.tone${tone}`, [buffer]))
+        results.push(session.text(`.tone${tone}`, [buffer]))
       }
       counter = 1
       current = tone
       buffer = char
     }
+
+    results = Array.from(new Set(results))
+    await session.send(results.join('\n'))
   })
 }
 
