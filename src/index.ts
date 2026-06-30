@@ -60,7 +60,7 @@ export function apply(ctx: Context, config: Config) {
       }
       const probability = inverseLerp(config.lerp.a, config.lerp.b, counter)
       if (current && '1234'.includes(current) && Math.random() < probability) {
-        results.push(session.text(`tone${tone}`, [buffer]))
+        results.push(session.text(`tone${current}`, [buffer]))
       }
       counter = 1
       current = tone
