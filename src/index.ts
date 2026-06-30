@@ -68,6 +68,14 @@ export const Config: Schema<Config> = Schema.object({
 })
 
 export function apply(ctx: Context, config: Config) {
+  ctx.i18n.define('zh-CN', {
+    all: '拼音丁真：注意到「{0}」国语四声相等俱全',
+    tone1: '拼音丁真：注意到「{0}」皆归一声',
+    tone2: '拼音丁真：注意到「{0}」全为阳平',
+    tone3: '拼音丁真：注意到「{0}」总属上母',
+    tone4: '拼音丁真：注意到「{0}」俱是去调',
+  })
+
   ctx.on('message', async (session) => {
     const chars = session.elements
       ?.map(({ type, attrs }) => type === 'text' ? attrs.content : '')
@@ -83,7 +91,7 @@ export function apply(ctx: Context, config: Config) {
       const tones = words.map(([tone]) => tone)
       if (tones.sort().join('') === '1234') {
         const chars = words.map(([, char]) => char).join('')
-        await session.send(`拼音丁真：注意到「${chars}」国语四声相等俱全。`)
+        await session.send(session.text('all', [chars]))
       }
     }
 
@@ -99,12 +107,7 @@ export function apply(ctx: Context, config: Config) {
       }
       const probability = inverseLerp(config.lerp.a, config.lerp.b, counter)
       if (current && '1234'.includes(current) && Math.random() < probability) {
-        await session.send(`拼音丁真：注意到「${buffer}」${{
-          1: '皆归一声',
-          2: '全为阳平',
-          3: '总属上母',
-          4: '俱是去调',
-        }[current]}。`)
+        await session.send(session.text(`.tone${tone}`, [buffer]))
       }
       counter = 1
       current = tone
