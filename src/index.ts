@@ -5,12 +5,66 @@ import {} from 'koishi-plugin-pinyin'
 export const name = 'pinyin-danzin'
 export const inject = ['pinyin']
 
+const charts = {
+  type: 'line',
+  data: {
+    labels: ['0', 'a', 'b', '∞'],
+    datasets: [{
+      label: 'probability',
+      data: [0, 0, 1, 1],
+      fill: false,
+    }],
+  },
+  options: {
+    scales: {
+      yAxes: [{
+        ticks: {
+          stepSize: 0.5,
+        },
+      }],
+    },
+  },
+}
+
+export const usage = `
+连续同声调的触发概率遵循以下函数：
+
+invlerp<sub>a,b</sub>(t) = clamp(0, 1, <span class="fraction">
+  <span class="numerator">t - a</span>
+  <span class="denominator">b - a</span>
+</span>)
+
+![invlerp(a,b)](https://quickchart.io/chart?w=180&h=120&c=${JSON.stringify(charts)})
+
+<style>
+  .fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+  }
+  .fraction .numerator {
+    border-bottom: 1.5px solid #000;
+    padding: 0 6px 2px;
+  }
+  .fraction .denominator {
+    padding: 0 6px;
+  }
+</style>
+`
+
 export interface Config {
-  minCount: number
+  lerp: {
+    a: number
+    b: number
+  }
 }
 
 export const Config: Schema<Config> = Schema.object({
-  minCount: Schema.number().default(3).description('最小连续同声调数量。'),
+  lerp: Schema.object({
+    a: Schema.number().default(3).description('最小连续同声调数量，小于等于该值时将不会触发。'),
+    b: Schema.number().default(8).description('最大连续同声调数量，大于等于该值时将必定触发。'),
+  }),
 })
 
 export function apply(ctx: Context, config: Config) {
@@ -43,7 +97,8 @@ export function apply(ctx: Context, config: Config) {
         buffer += char
         continue
       }
-      if (current && '1234'.includes(current) && counter >= config.minCount) {
+      const probability = inverseLerp(config.lerp.a, config.lerp.b, counter)
+      if (current && '1234'.includes(current) && Math.random() < probability) {
         await session.send(`拼音丁真：注意到「${buffer}」${{
           1: '皆归一声',
           2: '全为阳平',
@@ -62,4 +117,8 @@ function* fixedWindow<T>(arr: T[], size: number) {
   for (let i = 0; i < arr.length - size + 1; i++) {
     yield arr.slice(i, i + size)
   }
+}
+
+function inverseLerp(a: number, b: number, t: number) {
+  return (t - a) / (b - a)
 }
