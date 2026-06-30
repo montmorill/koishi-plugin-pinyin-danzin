@@ -30,7 +30,7 @@ export function apply(ctx: Context, config: Config) {
       .join('')
     if (!chars)
       return
-    const results: Dict<string[]> = { all: [], 1: [], 2: [], 3: [], 4: [] }
+    const results: Dict<string[]> = { full: [], 1: [], 2: [], 3: [], 4: [] }
     const pinyins = await ctx.pinyin.asyncPinyin(chars, { style: 3 }) as string[]
     const zipped = pinyins.map(pinyin => pinyin.slice(-1))
       .map((tone, index) => [tone, chars[index]])
@@ -39,8 +39,8 @@ export function apply(ctx: Context, config: Config) {
       const tones = words.map(([tone]) => tone)
       if (tones.sort().join('') === '1234') {
         const chars = words.map(([, char]) => char).join('')
-        if (!results.all.includes(chars))
-          results.all.push(chars)
+        if (!results.full.includes(chars))
+          results.full.push(chars)
       }
     }
 
