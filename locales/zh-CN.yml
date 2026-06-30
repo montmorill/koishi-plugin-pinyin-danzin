@@ -12,4 +12,3 @@ line: |-
     </i18n>
   {/each}
   <i18n path={"tone-" + tone} />
-  <br />

@@ -67,7 +67,7 @@ export function apply(ctx: Context, config: Config) {
     await session.send(Object.entries(results)
       .filter(([, words]) => words.length !== 0)
       .map(([tone, words]) => session.text('line', { words, tone }))
-      .join('\n'))
+      .join('<br>'))
   })
 }
 
