@@ -1,6 +1,7 @@
-import type { Context } from 'koishi'
+import type { Context, Dict } from 'koishi'
 import { Schema } from 'koishi'
 import {} from 'koishi-plugin-pinyin'
+import zhCN from '../locales/zh-CN.yml'
 
 export const name = 'pinyin-danzin'
 export const inject = ['pinyin']
@@ -21,13 +22,7 @@ export const Config: Schema<Config> = Schema.object({
 })
 
 export function apply(ctx: Context, config: Config) {
-  ctx.i18n.define('zh-CN', {
-    all: '拼音丁真：注意到「{0}」国语四声相等俱全',
-    tone1: '拼音丁真：注意到「{0}」皆归一声',
-    tone2: '拼音丁真：注意到「{0}」全为阳平',
-    tone3: '拼音丁真：注意到「{0}」总属上母',
-    tone4: '拼音丁真：注意到「{0}」俱是去调',
-  })
+  ctx.i18n.define('zh-CN', zhCN)
 
   ctx.on('message', async (session) => {
     const chars = session.elements
@@ -35,7 +30,7 @@ export function apply(ctx: Context, config: Config) {
       .join('')
     if (!chars)
       return
-    let results = []
+    const results: Dict<string[]> = { all: [], 1: [], 2: [], 3: [], 4: [] }
     const pinyins = await ctx.pinyin.asyncPinyin(chars, { style: 3 }) as string[]
     const zipped = pinyins.map(pinyin => pinyin.slice(-1))
       .map((tone, index) => [tone, chars[index]])
@@ -44,7 +39,8 @@ export function apply(ctx: Context, config: Config) {
       const tones = words.map(([tone]) => tone)
       if (tones.sort().join('') === '1234') {
         const chars = words.map(([, char]) => char).join('')
-        results.push(session.text('all', [chars]))
+        if (!results.all.includes(chars))
+          results.all.push(chars)
       }
     }
 
@@ -60,15 +56,18 @@ export function apply(ctx: Context, config: Config) {
       }
       const probability = inverseLerp(config.lerp.a, config.lerp.b, counter)
       if (current && '1234'.includes(current) && Math.random() < probability) {
-        results.push(session.text(`tone${current}`, [buffer]))
+        if (!results[current].includes(buffer))
+          results[current].push(buffer)
       }
       counter = 1
       current = tone
       buffer = char
     }
 
-    results = Array.from(new Set(results))
-    await session.send(results.join('\n'))
+    await session.send(Object.entries(results)
+      .filter(([, words]) => words.length !== 0)
+      .map(([tone, words]) => session.text('line', { words, tone }))
+      .join('\n'))
   })
 }
 
