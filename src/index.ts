@@ -34,27 +34,26 @@ export function apply(ctx: Context, config: Config) {
     }
 
     let counter = 1
-    let current = ''
+    let current = 'start'
     let buffer = ''
-    zipped.push(['end', '']) // fix end issue
+    zipped.push(['end', ''])
     for (const [tone, char] of zipped) {
       if (tone === current) {
         counter++
         buffer += char
+        continue
       }
-      else {
-        if (counter >= config.minCount) {
-          await session.send(`拼音丁真：注意到「${buffer}」${{
-            1: '皆归一声',
-            2: '全为阳平',
-            3: '总属上母',
-            4: '俱是去调',
-          }[current]}。`)
-        }
-        counter = 1
-        current = tone
-        buffer = char
+      if (current && '1234'.includes(current) && counter >= config.minCount) {
+        await session.send(`拼音丁真：注意到「${buffer}」${{
+          1: '皆归一声',
+          2: '全为阳平',
+          3: '总属上母',
+          4: '俱是去调',
+        }[current]}。`)
       }
+      counter = 1
+      current = tone
+      buffer = char
     }
   })
 }
