@@ -8,6 +8,7 @@ export const inject = ['pinyin']
 export { usage } from './usage'
 
 export interface Config {
+  probability: number
   lerp: {
     a: number
     b: number
@@ -15,6 +16,7 @@ export interface Config {
 }
 
 export const Config: Schema<Config> = Schema.object({
+  probability: Schema.number().role('slider').min(0).max(1).step(0.01).default(0.2).description('全局触发概率。'),
   lerp: Schema.object({
     a: Schema.number().default(3).description('最小连续同声调数量，小于等于该值时将不会触发。'),
     b: Schema.number().default(4).description('最大连续同声调数量，大于等于该值时将必定触发。'),
@@ -64,10 +66,16 @@ export function apply(ctx: Context, config: Config) {
       buffer = char
     }
 
+    if (Math.random() > config.probability)
+      return
+
+    const oldScope = session.scope
+    session.scope = 'pinyin-danzin'
     await session.send(Object.entries(results)
       .filter(([, words]) => words.length !== 0)
-      .map(([tone, words]) => session.text('line', { words, tone }))
+      .map(([tone, words]) => session.text('.line', { words, tone }))
       .join('<br>'))
+    session.scope = oldScope
   })
 }
 
