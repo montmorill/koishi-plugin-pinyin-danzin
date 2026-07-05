@@ -70,7 +70,7 @@ export function apply(ctx: Context, config: Config) {
     }
 
     const oldScope = session.scope
-    session.scope = 'pinyin-danzin'
+    session.scope = 'pinyin-danzin.messages'
     await session.send(h.quote(session.messageId) + Object.entries(results)
       .filter(([, words]) => words.length)
       .map(([tone, words]) => session.text('.line', { words, tone }))
