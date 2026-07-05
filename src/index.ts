@@ -1,5 +1,5 @@
 import type { Context, Dict } from 'koishi'
-import { Schema } from 'koishi'
+import { h, Schema } from 'koishi'
 import {} from 'koishi-plugin-pinyin'
 import zhCN from '../locales/zh-CN.yml'
 
@@ -27,6 +27,9 @@ export function apply(ctx: Context, config: Config) {
   ctx.i18n.define('zh-CN', zhCN)
 
   ctx.on('message', async (session) => {
+    if (Math.random() > config.probability)
+      return
+
     const chars = session.elements
       ?.map(({ type, attrs }) => type === 'text' ? attrs.content : '')
       .join('')
@@ -66,15 +69,13 @@ export function apply(ctx: Context, config: Config) {
       buffer = char
     }
 
-    if (Math.random() > config.probability)
-      return
-
     const oldScope = session.scope
     session.scope = 'pinyin-danzin'
-    await session.send(Object.entries(results)
-      .filter(([, words]) => words.length !== 0)
+    await session.send(h.quote(session.messageId) + Object.entries(results)
+      .filter(([, words]) => words.length)
       .map(([tone, words]) => session.text('.line', { words, tone }))
-      .join('<br>'))
+      .join('<br>')
+      .trim())
     session.scope = oldScope
   })
 }
