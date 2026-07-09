@@ -1,6 +1,6 @@
 pinyin-danzin:
   messages:
-    line: |-
+    line: |
       拼音丁真：注意到
       {#each words as word}
         <i18n path=".quote">
