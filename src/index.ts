@@ -1,7 +1,7 @@
 import type { Context, Dict } from 'koishi'
 import { h, Schema } from 'koishi'
 import {} from 'koishi-plugin-pinyin'
-import zhCN from '../locales/zh-CN.yml'
+import zhCN from './locales/zh-CN.yml'
 
 export const name = 'pinyin-danzin'
 export const inject = ['pinyin']
