@@ -5,31 +5,15 @@ import zhCN from './locales/zh-CN.yml'
 
 export const name = 'pinyin-danzin'
 export const inject = ['pinyin']
-export { usage } from './usage'
 
-export interface Config {
-  probability: number
-  lerp: {
-    a: number
-    b: number
-  }
-}
+export interface Config {}
 
-export const Config: Schema<Config> = Schema.object({
-  probability: Schema.number().role('slider').min(0).max(1).step(0.01).default(0.2).description('全局触发概率。'),
-  lerp: Schema.object({
-    a: Schema.number().default(3).description('最小连续同声调数量，小于等于该值时将不会触发。'),
-    b: Schema.number().default(4).description('最大连续同声调数量，大于等于该值时将必定触发。'),
-  }),
-})
+export const Config: Schema<Config> = Schema.object({})
 
-export function apply(ctx: Context, config: Config) {
+export function apply(ctx: Context) {
   ctx.i18n.define('zh-CN', zhCN)
 
   ctx.on('message', async (session) => {
-    if (Math.random() > config.probability)
-      return
-
     const chars = session.elements
       ?.map(({ type, attrs }) => type === 'text' ? attrs.content : '')
       .join('')
@@ -49,34 +33,29 @@ export function apply(ctx: Context, config: Config) {
       }
     }
 
-    let counter = 1
     let current = 'start'
     let buffer = ''
     zipped.push(['end', ''])
     for (const [tone, char] of zipped) {
       if (tone === current) {
-        counter++
         buffer += char
         continue
       }
-      const probability = inverseLerp(config.lerp.a, config.lerp.b, counter)
-      if (current && '1234'.includes(current) && Math.random() < probability) {
+      if (current && '1234'.includes(current)) {
         if (!results[current].includes(buffer))
           results[current].push(buffer)
       }
-      counter = 1
       current = tone
       buffer = char
     }
 
-    const oldScope = session.scope
-    session.scope = 'pinyin-danzin.messages'
-    await session.send(h.quote(session.messageId) + Object.entries(results)
-      .filter(([, words]) => words.length)
-      .map(([tone, words]) => session.text('.line', { words, tone }))
-      .join('<br>')
-      .trim())
-    session.scope = oldScope
+    await session.send(await session.withScope('commands.danzin.messages', () => [
+      h.quote(session.messageId),
+      ...Object.entries(results)
+        .filter(([, words]) => words.length)
+        .flatMap(([tone, words]) => session.i18n('.line', { tone, words })),
+    ]),
+    )
   })
 }
 
@@ -84,8 +63,4 @@ function* fixedWindow<T>(arr: T[], size: number) {
   for (let i = 0; i < arr.length - size + 1; i++) {
     yield arr.slice(i, i + size)
   }
-}
-
-function inverseLerp(a: number, b: number, t: number) {
-  return (t - a) / (b - a)
 }
