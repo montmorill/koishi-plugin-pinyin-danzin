@@ -6,25 +6,30 @@ import zhCN from './locales/zh-CN.yml'
 export const name = 'pinyin-danzin'
 export const inject = ['pinyin']
 
-export interface Config {}
+export interface Config {
+  minLength: number
+}
 
-export const Config: Schema<Config> = Schema.object({})
+export const Config: Schema<Config> = Schema.object({
+  minLength: Schema.number().min(0).step(1).default(4).description('最短连续同声调长度。'),
+})
 
-export function apply(ctx: Context) {
+export function apply(ctx: Context, config: Config) {
   ctx.i18n.define('zh-CN', zhCN)
 
-  ctx.on('message', async (session) => {
-    const chars = session.elements
+  ctx.command('danzin <text:text>').action(async ({ session }) => {
+    const content = session?.elements
       ?.map(({ type, attrs }) => type === 'text' ? attrs.content : '')
       .join('')
-    if (!chars)
+    if (!session || !content)
       return
-    const results: Dict<string[]> = { full: [], 1: [], 2: [], 3: [], 4: [] }
-    const pinyins = await ctx.pinyin.asyncPinyin(chars, { style: 3 }) as string[]
-    const zipped = pinyins.map(pinyin => pinyin.slice(-1))
-      .map((tone, index) => [tone, chars[index]])
 
-    for (const words of fixedWindow(zipped, 4)) {
+    const results: Dict<string[]> = { full: [], 1: [], 2: [], 3: [], 4: [] }
+    const pinyins = await ctx.pinyin.asyncPinyin(content, { style: 3 }) as string[]
+    const tokens = pinyins.map(pinyin => pinyin.slice(-1))
+      .map((tone, index) => [tone, content[index]])
+
+    for (const words of fixedWindow(tokens, 4)) {
       const tones = words.map(([tone]) => tone)
       if (tones.sort().join('') === '1234') {
         const chars = words.map(([, char]) => char).join('')
@@ -33,29 +38,26 @@ export function apply(ctx: Context) {
       }
     }
 
+    let counter = 1
     let current = 'start'
     let buffer = ''
-    zipped.push(['end', ''])
-    for (const [tone, char] of zipped) {
+    tokens.push(['end', ''])
+    for (const [tone, char] of tokens) {
       if (tone === current) {
+        counter++
         buffer += char
         continue
       }
-      if (current && '1234'.includes(current)) {
+      if (current && '1234'.includes(current) && counter >= config.minLength) {
         if (!results[current].includes(buffer))
           results[current].push(buffer)
       }
+      counter = 1
       current = tone
       buffer = char
     }
 
-    await session.send(await session.withScope('commands.danzin.messages', () => [
-      h.quote(session.messageId),
-      ...Object.entries(results)
-        .filter(([, words]) => words.length)
-        .flatMap(([tone, words]) => session.i18n('.line', { tone, words })),
-    ]),
-    )
+    return session.i18n('.result', { quote: h.quote(session.messageId), results })
   })
 }
 

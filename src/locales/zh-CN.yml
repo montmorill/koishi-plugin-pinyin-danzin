@@ -1,14 +1,12 @@
 commands:
   danzin:
     messages:
+      result: |-
+        {quote}
+        {#each Object.entries(results) as entry}{#if entry[1].length}
+        拼音丁真：注意到{#each entry[1] as word}<i18n path=".quote">{word}</i18n>
+        {/each}<i18n path={".tone-" + entry[0]} />{/if}{/each}
       line: |-
-        拼音丁真：注意到
-        {#each words as word}
-          <i18n path=".quote">
-            {word}
-          </i18n>
-        {/each}
-        <i18n path={".tone-" + tone} />
       quote: 「{0}」
       tone-full: 国语四声相等俱全
       tone-1: 皆归一声
